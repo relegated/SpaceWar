@@ -9,39 +9,15 @@ let Torpedo_Launched = false;
 let Phaser_On = false;
 
 let socket = io.connect('http://localhost:8000');
-
-function Broadcast(socket) {
-    console.log("We have a new client: " + socket.id);
-    socket.on('UpdateShip', function (Data) {
-        console.log('Recieved:' + Data);
-        if (Data.Torpedo_Launched)
-            Torpedos.push(new Torpedo(Data.Me.Position.x, Data.Me.Position.y, Data.Me.Angle, Data.Me.Velocity.x + Math.cos(Data.Me.Angle) * 2, Data.Me.Velocity.y + Math.sin(Data.Me.Angle) * 2));
-        if (Data.Phaser_On)
-            Phasers.push(new Phaser(Data.Me.Position.x, Data.Me.Position.y, Data.Me.Angle, Data.MyId));
-    });
-    socket.on('disconnect', function () {
-        console.log("Client has disconnected");
-    });
-}
+YourShip = 8;
 
 function preload() {
     ShipImg = loadImage('assets/Ship.png');
+    ThrusterShipImg = loadImage('assets/thrusterShip.png');
     PhaserImg = loadImage('assets/Phaser.png');
-    io.sockets.on('connection', Broadcast());
 }
 
 function setup() {
-    socket.on('UpdateShip', function (Data) {
-        console.log('Recieved:' + Data);
-        if (Data.TorpedoLaunched) {
-            Torpedos.push(new Torpedo(Data.Me.Position.x, Data.Me.Position.y, Data.Me.Angle, Data.Me.Velocity.x + Math.cos(Data.Me.Angle) * 2, Data.Me.Velocity.y + Math.sin(Data.Me.Angle) * 2));
-            console.log('Good!');
-        }
-        if (Data.PhaserOn) {
-            Phasers.push(new Phaser(Data.Me.Position.x, Data.Me.Position.y, Data.Me.Angle, Data.MyId));
-            console.log('Good!');
-        }
-    });
     createCanvas(800, 800);
     loop();
     imageMode(CENTER);
@@ -49,11 +25,24 @@ function setup() {
     YourShip = Ships.length - 1;
     Ships.push(new Ship(Math.random() * width, Math.random() * height));
     Scroll = createVector(Ships[YourShip].Position.x, Ships[YourShip].Position.y);
+
+    socket.on('connection',
+        function (socket) {
+            sendData({ PhaserOn: Phaser_On, TorpedoLaunched: Torpedo_Launched, MyId: YourShip, x: Ships[YourShip].Position.x, y: Ships[YourShip].Position.y, Velocity: Ships[YourShip].Velocity, Angle: Ships[YourShip].Angle });
+        }
+    );
+    socket.on('UpdateShip', function (data) {
+        console.log('Recieved: ' + data);
+        if (data.TorpedoLaunched)
+            Torpedos.push(new Torpedo(data.x, data.y, data.Angle, data.Velocity.x + Math.cos(data.Angle) * 2, data.Velocity.y + Math.sin(data.Angle) * 2));
+        if (data.PhaserOn)
+            Phasers.push(new Phaser(data.x, data.y, data.Angle, data.MyId));
+    });
 }
 
 function draw() {
     if (YouAreDead) {
-        YourShip = -5;
+        YourShip = '';
         //redraw background
         background(0);
 
@@ -67,7 +56,7 @@ function draw() {
                 Ships[i].Update();
             } else
                 tint('#FF0000');
-            Ships[i].Draw();
+            Ships[i].Draw(ShipImg, ThrusterShipImg);
             if (Ships[i].Shields <= 0) {
                 Ships.delete(i);
             }
@@ -115,7 +104,7 @@ function draw() {
                 Phaser_On = Ships[i].Phaser_On;
             } else
                 tint('#FF0000');
-            Ships[i].Draw();
+            Ships[i].Draw(ShipImg, ThrusterShipImg);
             if (Ships[i].Shields <= 0) {
                 Ships.delete(i);
                 if (YourShip == i)

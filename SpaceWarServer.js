@@ -1,22 +1,55 @@
 // Using express: http://expressjs.com/
-let Ships = [];
-let YourShip;
-let Torpedo_Launched = false;
-let Phaser_On = false;
+let gamePieces = [];
 var express = require('express');
 var app = express();
 var server = app.listen(process.env.PORT || 8000, listen);
+app.use(express.static('public'));
+var io = require('socket.io')(server);
 function listen() {
   let host = server.address().address;
   let port = server.address().port;
   console.log('Listening at http://' + host + ':' + port);
 }
-app.use(express.static('public'));
-var io = require('socket.io')(server);
-setInterval(function () {
-  let Data = { Me: Ships[YourShip], TorpedoLaunched: Torpedo_Launched, PhaserOn: Phaser_On, MyId: YourShip };
-  io.sockets.emit('UpdateShip', Data);
-}, 33);
+
+setInterval(HeartBeat, 33);
+
+function HeartBeat() {
+  io.sockets.emit('heartbeat', gamePieces);
+}
+
+io.sockets.on('connection', function (socket) {
+  console.log("We have a new client: " + socket.id);
+
+  socket.on('start',
+    function (data) {
+      console.log(socket.id + " " + data.x + " " + data.y);
+      var ship = new Ship(socket.id, data.x, data.y);
+      gamePieces.push(ship);
+    }
+  );
+
+  socket.on('UpdateShip', function(data) {
+    console.log(data);
+  });
+
+  socket.on('disconnect', function () {
+    console.log("Client has disconnected");
+  });
+});
+
+io.sockets.on('UpdateShip',
+  function (data) {
+    console.log(data);
+  }
+);
+
+function sendData(data) {
+  io.sockets.emit('UpdateShip', data);
+}
+
+Array.prototype.insertAt = function(index, item) {
+  this.splice(index, 0, item);
+};
 /*
 function handleRequest(request, response) {
   response.writeHead(200, {

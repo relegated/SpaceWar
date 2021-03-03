@@ -1,5 +1,6 @@
 class Ship {
-    constructor(x, y) {
+    constructor(id, x, y) {
+        this.Id = id;
         this.Position = createVector(x, y);
         this.Velocity = createVector(0, 0);
         this.Shields = 100;
@@ -10,6 +11,7 @@ class Ship {
         this.e_pressed = true;
         this.PhaserOn = false;
         this.Torpedo_Launched = false;
+        this.Cloaked = false;
     }
 
     Update() {
@@ -45,7 +47,7 @@ class Ship {
             this.Energy++;
             this.Shields--;
         }
-        if (keyIsDown(88) && this.Energy > 0 && this.Shields < 100) {
+        if (keyIsDown(67) && this.Energy > 0 && this.Shields < 100) {
             this.Shields++;
             this.Energy--;
         }
@@ -61,18 +63,23 @@ class Ship {
         if (this.Position.y > height + 50) this.Position.add(0, -height - 150);
     }
 
-    Draw() {
-        stroke('#6666FF');
-        line(this.Position.x - 50, this.Position.y + 57, (this.Position.x - 50) + this.Shields, this.Position.y + 57);
-        stroke('#FFFF00');
-        line(this.Position.x - 50, this.Position.y + 60, (this.Position.x - 50) + this.Energy, this.Position.y + 60);
-        stroke('#FFFFFF');
-        line(this.Position.x - 50, this.Position.y + 63, (this.Position.x - 50) + this.ThrustEnergy, this.Position.y + 63);
-        noStroke();
-        push();
-        translate(this.Position.x, this.Position.y);
-        rotate(this.Angle + Math.PI / 2);
-        image(ShipImg, 0, 0);
-        pop();
+    Draw(img1, img2) {
+        if (!this.Cloaked) {
+            stroke('#6666FF');
+            line(this.Position.x - 50, this.Position.y + 57, (this.Position.x - 50) + this.Shields, this.Position.y + 57);
+            stroke('#FFFF00');
+            line(this.Position.x - 50, this.Position.y + 60, (this.Position.x - 50) + this.Energy, this.Position.y + 60);
+            stroke('#FFFFFF');
+            line(this.Position.x - 50, this.Position.y + 63, (this.Position.x - 50) + this.ThrustEnergy, this.Position.y + 63);
+            noStroke();
+            push();
+            translate(this.Position.x, this.Position.y);
+            rotate(this.Angle + Math.PI / 2);
+            if (this.Thrust)
+                image(img2, 0, 0)
+            else
+                image(img1, 0, 0);
+            pop();
+        }
     }
 }
